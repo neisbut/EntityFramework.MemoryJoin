@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2009
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework.MemoryJoin.TestRunner45", "EntityFramework.MemoryJoin.TestRunner45\EntityFramework.MemoryJoin.TestRunner45.csproj", "{1AD8B2B8-6163-41B8-9D85-C3F8805E8580}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework.MemoryJoin", "EntityFramework.MemoryJoin\EntityFramework.MemoryJoin.csproj", "{156A6D71-6341-4006-9701-7B222CBE8487}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EntityFrameworkCore.MemoryJoin", "EntityFrameworkCore.MemoryJoin\EntityFrameworkCore.MemoryJoin.csproj", "{B5BC8E1F-3D5A-4599-9DC2-FE109DA24A7E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EntityFrameworkCore.MemoryJoin.TestRunnerCore", "EntityFrameworkCore.MemoryJoin.TestRunnerCore\EntityFrameworkCore.MemoryJoin.TestRunnerCore.csproj", "{26B3DE1A-5E61-4876-9ED0-21F40D149E6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{B4EAFAEC-6EBC-4484-9519-FA879A7FD083}"
+	ProjectSection(SolutionItems) = preProject
+		CreatePackage.bat = CreatePackage.bat
+		Package.nuspec = Package.nuspec
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1AD8B2B8-6163-41B8-9D85-C3F8805E8580}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AD8B2B8-6163-41B8-9D85-C3F8805E8580}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AD8B2B8-6163-41B8-9D85-C3F8805E8580}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AD8B2B8-6163-41B8-9D85-C3F8805E8580}.Release|Any CPU.Build.0 = Release|Any CPU
+		{156A6D71-6341-4006-9701-7B222CBE8487}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{156A6D71-6341-4006-9701-7B222CBE8487}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{156A6D71-6341-4006-9701-7B222CBE8487}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{156A6D71-6341-4006-9701-7B222CBE8487}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5BC8E1F-3D5A-4599-9DC2-FE109DA24A7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5BC8E1F-3D5A-4599-9DC2-FE109DA24A7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5BC8E1F-3D5A-4599-9DC2-FE109DA24A7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5BC8E1F-3D5A-4599-9DC2-FE109DA24A7E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26B3DE1A-5E61-4876-9ED0-21F40D149E6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26B3DE1A-5E61-4876-9ED0-21F40D149E6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26B3DE1A-5E61-4876-9ED0-21F40D149E6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26B3DE1A-5E61-4876-9ED0-21F40D149E6D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8EAB61B9-F1A2-45FF-9DC5-F8832C1FFCE8}
+	EndGlobalSection
+EndGlobal
