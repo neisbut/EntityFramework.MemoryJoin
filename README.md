@@ -10,6 +10,10 @@ Tested with: MSSQL and PostgreSQL. (others should also work as standard EF API a
 
     ```protected DbSet<EntityFramework.MemoryJoin.QueryModelClass> QueryData { get; set; }```
     
+    Or like this for EF Core
+    
+    ```protected DbSet<EntityFrameworkCore.MemoryJoin.QueryModelClass> QueryData { get; set; }```
+    
   Please note this DbSet is protected, so it can't be used by anybody, only MemoryJoin will access it.
   Another note: table for QueryModelClass is NOT required. It is used for internal mapping only. So if you use migrations - basically use -IgnoreChanges flag.
   
@@ -18,6 +22,11 @@ Tested with: MSSQL and PostgreSQL. (others should also work as standard EF API a
 2. After DbSet is defined you can write as follows:
   
     ```using EntityFramework.MemoryJoin```
+    
+    For EF Core:
+    
+    ```using EntityFrameworkCore.MemoryJoin```
+    
     
   Then
   
@@ -28,7 +37,7 @@ Tested with: MSSQL and PostgreSQL. (others should also work as standard EF API a
     var queryData = new [] {
         new { .StreetName = "Foo", .HouseNumber = 33 },
         new { .StreetName = "Baz", .HouseNumber = 99 },
-        // can specify other 1000 objects here
+        // can specify other objects here
     };
     
     // get queryable representation, using thing like AsQueryable() will not work
