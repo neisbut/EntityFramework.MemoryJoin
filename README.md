@@ -1,4 +1,4 @@
-# EntityFramework.MemoryJoin
+# EntityFrameworkCore.MemoryJoin
 Extension for EntityFramework for joins to in-memory data. Both Entity Framework 6 and Entity Framework Core are supported!
 Used SQL standard syntax. 
 
