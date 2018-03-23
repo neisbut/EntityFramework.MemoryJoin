@@ -158,7 +158,7 @@ namespace EntityFramework.MemoryJoin.Internal
                 for (var j = 0; j < options.ColumnNames.Length; j++)
                 {
                     var value = el[options.ColumnNames[j]];
-                    string stringValue = TryProcessParameterAsString(value, command, providerType, innerSb);
+                    string stringValue = TryProcessParameterAsString(value, command, providerType, innerSb, options.ValuesInjectMethod);
 
                     if (stringValue != null)
                     {
@@ -196,16 +196,25 @@ namespace EntityFramework.MemoryJoin.Internal
             object value,
             DbCommand command,
             KnownProvider provider,
-            StringBuilder sb)
+            StringBuilder sb,
+            ValuesInjectionMethodInternal injectMethod)
         {
+            // null is just 'NULL'
             if (value == null)
                 return "NULL";
 
-            // Postgres has a huge limit for parameters, whereas MSSQL is just ... 2100 :(
-            if (provider == KnownProvider.PostgreSQL)
+            if (injectMethod == ValuesInjectionMethodInternal.ViaParameters)
+            {
                 return null;
+            }
+            else if (injectMethod == ValuesInjectionMethodInternal.Auto)
+            {
+                // Postgres has a huge limit for parameters, whereas MSSQL is just ... 2100 :(
+                if (provider == KnownProvider.PostgreSQL)
+                    return null;
+            }
 
-            // For MSSQL - try to inject parameters as text
+            // Try to inject parameters as text
             sb.Length = 0;
             if (value is string strValue)
             {
@@ -225,8 +234,15 @@ namespace EntityFramework.MemoryJoin.Internal
                         .Append(dateValue.ToString("yyyy-MM-ddTHH:mm:ss.fff"))
                         .Append("' AS DATETIME)");
                 }
+                else if(provider == KnownProvider.PostgreSQL)
+                {
+                    sb.Append("'")
+                        .Append(dateValue.ToString("yyyy-MM-ddTHH:mm:ss.fff"))
+                        .Append("'::date");
+                }
                 else
                 {
+                    // other providers are not yet implemented
                     return null;
                 }
             }

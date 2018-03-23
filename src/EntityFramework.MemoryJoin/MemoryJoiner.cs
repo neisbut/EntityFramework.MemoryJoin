@@ -35,6 +35,14 @@ namespace EntityFramework.MemoryJoin
         /// <summary>
         /// Returns queryable wrapper for data
         /// </summary>
+        public static IQueryable<T> FromLocalList<T>(this DbContext context, IList<T> data, ValuesInjectionMethod method)
+        {
+            return FromLocalList<T>(context, data, typeof(QueryModelClass), method);
+        }
+
+        /// <summary>
+        /// Returns queryable wrapper for data
+        /// </summary>
         public static IQueryable<T> FromLocalList<T, TQueryModel>(this DbContext context, IList<T> data)
         {
             return FromLocalList<T>(context, data, typeof(TQueryModel));
@@ -43,10 +51,18 @@ namespace EntityFramework.MemoryJoin
         /// <summary>
         /// Returns queryable wrapper for data
         /// </summary>
+        public static IQueryable<T> FromLocalList<T>(this DbContext context, IList<T> data, Type queryClass)
+        {
+            return FromLocalList<T>(context, data, queryClass, ValuesInjectionMethod.Auto);
+        }
+
+        /// <summary>
+        /// Returns queryable wrapper for data
+        /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static IQueryable<T> FromLocalList<T>(this DbContext context, IList<T> data, Type queryClass)
+        public static IQueryable<T> FromLocalList<T>(this DbContext context, IList<T> data, Type queryClass, ValuesInjectionMethod method)
         {
             if (MemoryJoinerInterceptor.IsInterceptionEnabled(
                 new[] { context }, out InterceptionOptions opts))
@@ -58,7 +74,7 @@ namespace EntityFramework.MemoryJoin
             var propMapping = allowedMappingDict.GetOrAdd(queryClass, (t) => MappingHelper.GetPropertyMappings(t));
             var entityMapping = MappingHelper.GetEntityMapping<T>(context, queryClass, propMapping);
 
-            PrepareInjection(entityMapping.UserProperties, data, context, queryClass);
+            PrepareInjection(entityMapping.UserProperties, data, context, queryClass, method);
 
             var baseQuerySet = context.Set(queryClass);
 
@@ -73,7 +89,8 @@ namespace EntityFramework.MemoryJoin
             Dictionary<string, Func<T, object>> usedProperties,
             IList<T> data,
             DbContext context,
-            Type queryClass)
+            Type queryClass,
+            ValuesInjectionMethod method)
         {
             var opts = new InterceptionOptions
             {
@@ -82,7 +99,8 @@ namespace EntityFramework.MemoryJoin
                 Data = data
                     .Select(x => usedProperties.ToDictionary(y => y.Key, y => y.Value(x)))
                     .ToList(),
-                ContextType = context.GetType()
+                ContextType = context.GetType(),
+                ValuesInjectMethod = (ValuesInjectionMethodInternal)method
             };
 
             MemoryJoinerInterceptor.SetInterception(context, opts);

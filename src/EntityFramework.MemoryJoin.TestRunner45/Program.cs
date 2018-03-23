@@ -22,7 +22,8 @@ namespace EntityFramework.MemoryJoin.TestRunner45
                         x.HouseNumber,
                         Extra = "I'm from local!",
                         Integer = 123,
-                        Float = 321.0f
+                        Float = 321.0f,
+                        Date = DateTime.Now
                     })
                     .ToList();
 

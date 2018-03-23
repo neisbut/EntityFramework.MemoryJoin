@@ -34,7 +34,8 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
                     DateTime = DateTime.Now,
                     Extra = "I'm from \n ' \" local!",
                     Integer = 123,
-                    Float = 321.0f
+                    Float = 321.0f,
+                    Date = DateTime.Now
                 })
                 .ToList();
 

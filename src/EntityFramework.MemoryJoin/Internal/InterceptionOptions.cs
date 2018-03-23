@@ -15,5 +15,6 @@ namespace EntityFramework.MemoryJoin.Internal
 
         public Type ContextType { get; set; }
 
+        public ValuesInjectionMethodInternal ValuesInjectMethod { get; set; }
     }
 }
