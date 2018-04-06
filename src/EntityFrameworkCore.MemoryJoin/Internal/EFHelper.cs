@@ -30,5 +30,14 @@ namespace EntityFramework.MemoryJoin.Internal
             return relational.TableName;
         }
 
+        internal static string GetKeyProperty(DbContext context, Type t)
+        {
+            var kps = context.Model.FindEntityType(t).FindPrimaryKey().Properties;
+            if (kps.Count > 1)
+                throw new NotSupportedException("Multiple column PK is not supported");
+
+            return kps.First().Relational().ColumnName;
+        }
+
     }
 }

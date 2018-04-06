@@ -85,7 +85,8 @@ namespace EntityFrameworkCore.MemoryJoin
                     .Select(x => entityMapping.UserProperties.ToDictionary(y => y.Key, y => y.Value(x)))
                     .ToList(),
                 ContextType = context.GetType(),
-                ValuesInjectMethod = (ValuesInjectionMethodInternal)method
+                ValuesInjectMethod = (ValuesInjectionMethodInternal)method,
+                KeyColumnName = entityMapping.KeyColumnName
             };
 
             var connection = context.Database.GetDbConnection();

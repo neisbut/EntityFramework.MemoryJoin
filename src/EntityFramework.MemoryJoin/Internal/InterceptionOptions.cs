@@ -13,6 +13,8 @@ namespace EntityFramework.MemoryJoin.Internal
 
         public string[] ColumnNames { get; set; }
 
+        public string KeyColumnName { get; set; }
+
         public Type ContextType { get; set; }
 
         public ValuesInjectionMethodInternal ValuesInjectMethod { get; set; }

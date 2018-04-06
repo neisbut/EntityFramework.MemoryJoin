@@ -36,8 +36,8 @@ namespace EntityFramework.MemoryJoin.Internal
         internal static EntitySetBase GetEntitySet(DbContext context, Type type)
         {
             var metadata = ((IObjectContextAdapter)context).ObjectContext.MetadataWorkspace;
-            string baseTypeName = type.BaseType.Name;
-            string typeName = type.Name;
+            var baseTypeName = type.BaseType.Name;
+            var typeName = type.Name;
 
             var es = metadata
                     .GetItemCollection(DataSpace.SSpace)
@@ -73,38 +73,41 @@ namespace EntityFramework.MemoryJoin.Internal
 
                 return ConvertFragmentToMapping(context, type, mappingFragment, entityType);
             }
-            else
-            {
-                var partMapping = mappings.SelectMany(x => x.EntityTypeMappings)
-                    .Where(x => x.EntityType != null)
-                    .Where(x => x.EntityType.Name == type.Name).FirstOrDefault();
 
-                if (partMapping.EntityType.BaseType != null)
-                {
-                    var baseEntityType = metadata.GetItems<EntityType>(DataSpace.OSpace)
-                        .Single(e => e.Name == partMapping.EntityType.BaseType.Name);
-                    var baseClrType = objectItemCollection.GetClrType(baseEntityType);
+            var partMapping = mappings
+                .SelectMany(x => x.EntityTypeMappings)
+                .Where(x => x.EntityType != null)
+                .FirstOrDefault(x => x.EntityType.Name == type.Name);
 
-                    var baseTypeMapping = GetColumnNames(context, baseClrType);
-                    var subTypeMapping = ConvertFragmentToMapping(
-                        context, type, partMapping.Fragments.Single(), entityType);
+            if (partMapping?.EntityType.BaseType == null) throw new NotSupportedException();
 
-                    var union = baseTypeMapping.Union(subTypeMapping)
-                        .ToDictionary(x => x.Key, x => x.Value);
-                    return union;
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
+            var baseEntityType = metadata.GetItems<EntityType>(DataSpace.OSpace)
+                .Single(e => e.Name == partMapping.EntityType.BaseType.Name);
+            var baseClrType = objectItemCollection.GetClrType(baseEntityType);
 
-            }
+            var baseTypeMapping = GetColumnNames(context, baseClrType);
+            var subTypeMapping = ConvertFragmentToMapping(
+                context, type, partMapping.Fragments.Single(), entityType);
+
+            var union = baseTypeMapping.Union(subTypeMapping)
+                .ToDictionary(x => x.Key, x => x.Value);
+            return union;
         }
 
         internal static string GetTableName(DbContext context, Type t)
         {
             var entityType = GetEntitySet(context, t);
             return entityType.Table;
+        }
+
+        internal static string GetKeyProperty(DbContext context, Type t)
+        {
+            var entityType = GetEntitySet(context, t);
+            var kps = entityType.ElementType.KeyProperties;
+            if (kps.Count > 1)
+                throw new NotSupportedException("Multiple column PK is not supported");
+
+            return kps.First().Name;
         }
 
     }

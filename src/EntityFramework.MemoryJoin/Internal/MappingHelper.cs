@@ -19,10 +19,10 @@ namespace EntityFramework.MemoryJoin.Internal
 {
     internal static class MappingHelper
     {
+        private static readonly ConcurrentDictionary<Type, KnownProvider> TypeToKnownProvider =
+            new ConcurrentDictionary<Type, KnownProvider>();
 
-        static ConcurrentDictionary<Type, KnownProvider> typeToKnownProvider = new ConcurrentDictionary<Type, KnownProvider>();
-
-        static void ValidateAndExtendMapping(Dictionary<Type, PropertyInfo[]> mapping)
+        private static void ValidateAndExtendMapping(Dictionary<Type, PropertyInfo[]> mapping)
         {
             if (!mapping.ContainsKey(typeof(long)))
                 throw new InvalidOperationException("Please include at least one property with `Long` type");
@@ -58,7 +58,7 @@ namespace EntityFramework.MemoryJoin.Internal
             Dictionary<Type, PropertyInfo[]> allowedPropertyMapping
             )
         {
-            HashSet<PropertyInfo> allowedProperties = new HashSet<PropertyInfo>(
+            var allowedProperties = new HashSet<PropertyInfo>(
                 allowedPropertyMapping.SelectMany(x => x.Value));
 
             var inParam = Expression.Parameter(typeof(T), "x");
@@ -68,12 +68,20 @@ namespace EntityFramework.MemoryJoin.Internal
             var outMappingPairs = new List<Tuple<MemberInfo, Expression>>();
 
             var usedProperties = new Dictionary<string, Func<T, object>>();
+            var pkColumnName = EFHelper.GetKeyProperty(context, queryClass);
+            if (pkColumnName == null)
+                throw new NotSupportedException($"{queryClass.Name} should have PK set");
+            //if (pkColumnName.PropertyType != typeof(Int16) &&
+            //    pkColumnName.PropertyType != typeof(Int32) &&
+            //    pkColumnName.PropertyType != typeof(Int64))
+            //    throw new NotSupportedException("Only numeric primary key is supported (int16, int32, int64)");
+
             var columnNamesDict = EFHelper.GetColumnNames(context, queryClass);
 
             foreach (var prop in typeof(T).GetProperties())
             {
                 var baseType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-                if (!allowedPropertyMapping.TryGetValue(baseType, out PropertyInfo[] allowedMappedProps))
+                if (!allowedPropertyMapping.TryGetValue(baseType, out var allowedMappedProps))
                     throw new NotSupportedException("Not supported property type");
 
                 var mapProperty = allowedMappedProps.FirstOrDefault(x => allowedProperties.Contains(x));
@@ -106,7 +114,7 @@ namespace EntityFramework.MemoryJoin.Internal
             var inNew = Expression.New(inCtor);
             var inBind = Expression.MemberInit(inNew,
                 inMappingPairs.Select(x => Expression.Bind(x.Item1, x.Item2)));
-            var inExpression = Expression.Lambda(inBind, inParam);
+            // var inExpression = Expression.Lambda(inBind, inParam);
 
             var outCtor = typeof(T).GetConstructors(
                 BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -132,7 +140,8 @@ namespace EntityFramework.MemoryJoin.Internal
             return new Mapping<T>()
             {
                 UserProperties = usedProperties,
-                OutExpression = outExpression
+                OutExpression = outExpression,
+                KeyColumnName = pkColumnName
             };
         }
 
@@ -142,23 +151,28 @@ namespace EntityFramework.MemoryJoin.Internal
             DbCommand command,
             IList parameters)
         {
-            var providerType = typeToKnownProvider.GetOrAdd(
+            var providerType = TypeToKnownProvider.GetOrAdd(
                 options.ContextType, (t) => GetKnownProvider(command));
 
-            var paramPattern = "@__gen_q_p";
+            const string paramPattern = "@__gen_q_p";
 
             var sb = stringBuilder;
             var innerSb = new StringBuilder(20);
             sb.Append("SELECT * FROM (VALUES ");
 
             var i = 0;
+            var id = 1;
             foreach (var el in options.Data)
             {
                 sb.Append("(");
-                for (var j = 0; j < options.ColumnNames.Length; j++)
+                // Let's append Id anyways, as per Issue #1
+
+                sb.Append(id).Append(", ");
+                foreach (var columnName in options.ColumnNames)
                 {
-                    var value = el[options.ColumnNames[j]];
-                    string stringValue = TryProcessParameterAsString(value, command, providerType, innerSb, options.ValuesInjectMethod);
+                    var value = el[columnName];
+                    var stringValue = TryProcessParameterAsString(value,
+                        providerType, innerSb, options.ValuesInjectMethod);
 
                     if (stringValue != null)
                     {
@@ -179,11 +193,14 @@ namespace EntityFramework.MemoryJoin.Internal
                 }
                 sb.Length -= 2;
                 sb.Append("), ");
+                id++;
             }
 
             sb.Length -= 2;
 
             sb.Append(") AS ").Append(options.DynamicTableName).Append(" (");
+            sb.Append(options.KeyColumnName).Append(", ");
+
             foreach (var cname in options.ColumnNames)
             {
                 sb.Append(cname).Append(", ");
@@ -192,9 +209,8 @@ namespace EntityFramework.MemoryJoin.Internal
             sb.Append(")");
         }
 
-        static string TryProcessParameterAsString(
+        private static string TryProcessParameterAsString(
             object value,
-            DbCommand command,
             KnownProvider provider,
             StringBuilder sb,
             ValuesInjectionMethodInternal injectMethod)
@@ -203,53 +219,51 @@ namespace EntityFramework.MemoryJoin.Internal
             if (value == null)
                 return "NULL";
 
-            if (injectMethod == ValuesInjectionMethodInternal.ViaParameters)
+            switch (injectMethod)
             {
-                return null;
-            }
-            else if (injectMethod == ValuesInjectionMethodInternal.Auto)
-            {
-                // Postgres has a huge limit for parameters, whereas MSSQL is just ... 2100 :(
-                if (provider == KnownProvider.PostgreSQL)
+                case ValuesInjectionMethodInternal.ViaParameters:
                     return null;
+                case ValuesInjectionMethodInternal.Auto:
+                    // Postgres has a huge limit for parameters, whereas MSSQL is just ... 2100 :(
+                    if (provider == KnownProvider.PostgreSQL)
+                        return null;
+                    break;
             }
 
             // Try to inject parameters as text
             sb.Length = 0;
-            if (value is string strValue)
+            switch (value)
             {
-                sb.Append("'").Append(strValue.Replace("'", "''")).Append("'");
-            }
-            else if (value is int || value is long ||
-                value is float || value is double ||
-                value is decimal)
-            {
-                sb.Append(Convert.ToString(value, CultureInfo.InvariantCulture));
-            }
-            else if (value is DateTime dateValue)
-            {
-                if (provider == KnownProvider.Mssql)
-                {
-                    sb.Append("CAST ('")
-                        .Append(dateValue.ToString("yyyy-MM-ddTHH:mm:ss.fff"))
-                        .Append("' AS DATETIME)");
-                }
-                else if(provider == KnownProvider.PostgreSQL)
-                {
-                    sb.Append("'")
-                        .Append(dateValue.ToString("yyyy-MM-ddTHH:mm:ss.fff"))
-                        .Append("'::date");
-                }
-                else
-                {
-                    // other providers are not yet implemented
+                case string strValue:
+                    sb.Append("'").Append(strValue.Replace("'", "''")).Append("'");
+                    break;
+                case int _:
+                case long _:
+                case float _:
+                case double _:
+                case decimal _:
+                    sb.Append(Convert.ToString(value, CultureInfo.InvariantCulture));
+                    break;
+                case DateTime dateValue:
+                    switch (provider)
+                    {
+                        case KnownProvider.Mssql:
+                            sb.Append("CAST ('")
+                                .Append(dateValue.ToString("yyyy-MM-ddTHH:mm:ss.fff"))
+                                .Append("' AS DATETIME)");
+                            break;
+                        case KnownProvider.PostgreSQL:
+                            sb.Append("'")
+                                .Append(dateValue.ToString("yyyy-MM-ddTHH:mm:ss.fff"))
+                                .Append("'::date");
+                            break;
+                        default:
+                            return null;
+                    }
+
+                    break;
+                default:
                     return null;
-                }
-            }
-            else
-            {
-                // can't process as string
-                return null;
             }
 
             return sb.ToString();

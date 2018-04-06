@@ -71,10 +71,10 @@ namespace EntityFramework.MemoryJoin
                     "Only one data set can be applied to single DbContext before actuall DB request is done");
             }
 
-            var propMapping = allowedMappingDict.GetOrAdd(queryClass, (t) => MappingHelper.GetPropertyMappings(t));
+            var propMapping = allowedMappingDict.GetOrAdd(queryClass, MappingHelper.GetPropertyMappings);
             var entityMapping = MappingHelper.GetEntityMapping<T>(context, queryClass, propMapping);
 
-            PrepareInjection(entityMapping.UserProperties, data, context, queryClass, method);
+            PrepareInjection(entityMapping, data, context, queryClass, method);
 
             var baseQuerySet = context.Set(queryClass);
 
@@ -86,7 +86,7 @@ namespace EntityFramework.MemoryJoin
         }
 
         static void PrepareInjection<T>(
-            Dictionary<string, Func<T, object>> usedProperties,
+            Mapping<T> mapping,
             IList<T> data,
             DbContext context,
             Type queryClass,
@@ -95,12 +95,13 @@ namespace EntityFramework.MemoryJoin
             var opts = new InterceptionOptions
             {
                 QueryTableName = EFHelper.GetTableName(context, queryClass),
-                ColumnNames = usedProperties.Keys.ToArray(),
+                ColumnNames = mapping.UserProperties.Keys.ToArray(),
                 Data = data
-                    .Select(x => usedProperties.ToDictionary(y => y.Key, y => y.Value(x)))
+                    .Select(x => mapping.UserProperties.ToDictionary(y => y.Key, y => y.Value(x)))
                     .ToList(),
                 ContextType = context.GetType(),
-                ValuesInjectMethod = (ValuesInjectionMethodInternal)method
+                ValuesInjectMethod = (ValuesInjectionMethodInternal)method,
+                KeyColumnName = mapping.KeyColumnName
             };
 
             MemoryJoinerInterceptor.SetInterception(context, opts);
