@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Internal\InterceptionOptions.cs" />
     <Compile Include="Internal\KnownProvider.cs" />
     <Compile Include="Internal\Mapping.cs" />

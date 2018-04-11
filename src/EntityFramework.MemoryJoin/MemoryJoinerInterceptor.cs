@@ -1,4 +1,5 @@
-﻿using EntityFramework.MemoryJoin.Internal;
+﻿using System;
+using EntityFramework.MemoryJoin.Internal;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -10,32 +11,30 @@ namespace EntityFramework.MemoryJoin
 {
     internal class MemoryJoinerInterceptor : IDbCommandInterceptor
     {
-        static ConcurrentDictionary<DbContext, InterceptionOptions> interceptionOptions =
+        private static readonly ConcurrentDictionary<DbContext, InterceptionOptions> InterceptionOptions =
             new ConcurrentDictionary<DbContext, InterceptionOptions>();
 
-        static internal void SetInterception(DbContext context, InterceptionOptions options)
+        internal static void SetInterception(DbContext context, InterceptionOptions options)
         {
-            interceptionOptions[context] = options;
+            InterceptionOptions[context] = options;
         }
 
-        static internal bool IsInterceptionEnabled(IEnumerable<DbContext> contexts, out InterceptionOptions options)
+        internal static bool IsInterceptionEnabled(IEnumerable<DbContext> contexts, out InterceptionOptions options)
         {
             options = null;
             using (var enumerator = contexts.GetEnumerator())
             {
-                if (enumerator.MoveNext())
-                {
-                    var firstOne = enumerator.Current;
-                    var result = firstOne != null &&
-                        interceptionOptions.TryGetValue(firstOne, out options) &&
-                        !enumerator.MoveNext();
-                    if (result)
-                        interceptionOptions.TryRemove(firstOne, out options);
+                if (!enumerator.MoveNext()) return false;
 
-                    return result;
-                }
+                var firstOne = enumerator.Current;
+                var result = firstOne != null &&
+                             InterceptionOptions.TryGetValue(firstOne, out options) &&
+                             !enumerator.MoveNext();
+                if (result)
+                    InterceptionOptions.TryRemove(firstOne, out options);
+
+                return result;
             }
-            return false;
         }
 
         public void NonQueryExecuted(DbCommand command, DbCommandInterceptionContext<int> interceptionContext)
@@ -44,7 +43,7 @@ namespace EntityFramework.MemoryJoin
 
         public void NonQueryExecuting(DbCommand command, DbCommandInterceptionContext<int> interceptionContext)
         {
-            if (IsInterceptionEnabled(interceptionContext.DbContexts, out InterceptionOptions opts))
+            if (IsInterceptionEnabled(interceptionContext.DbContexts, out var opts))
                 ModifyQuery(command, opts);
         }
 
@@ -54,7 +53,7 @@ namespace EntityFramework.MemoryJoin
 
         public void ReaderExecuting(DbCommand command, DbCommandInterceptionContext<DbDataReader> interceptionContext)
         {
-            if (IsInterceptionEnabled(interceptionContext.DbContexts, out InterceptionOptions opts))
+            if (IsInterceptionEnabled(interceptionContext.DbContexts, out var opts))
                 ModifyQuery(command, opts);
         }
 
@@ -64,13 +63,16 @@ namespace EntityFramework.MemoryJoin
 
         public void ScalarExecuting(DbCommand command, DbCommandInterceptionContext<object> interceptionContext)
         {
-            if (IsInterceptionEnabled(interceptionContext.DbContexts, out InterceptionOptions opts))
+            if (IsInterceptionEnabled(interceptionContext.DbContexts, out var opts))
                 ModifyQuery(command, opts);
         }
 
-        private void ModifyQuery(DbCommand command, InterceptionOptions opts)
+        private static void ModifyQuery(DbCommand command, InterceptionOptions opts)
         {
-            var tableNamePosition = command.CommandText.IndexOf(opts.QueryTableName);
+            var tableNamePosition = command.CommandText.IndexOf(opts.QueryTableName, StringComparison.Ordinal);
+            if (tableNamePosition < 0)
+                return;
+
             var nextSpace = command.CommandText.IndexOf(' ', tableNamePosition);
             var prevSpace = command.CommandText.LastIndexOf(' ', tableNamePosition);
             var tableFullName = command.CommandText.Substring(prevSpace + 1, nextSpace - prevSpace - 1);

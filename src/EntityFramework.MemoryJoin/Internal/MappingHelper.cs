@@ -225,7 +225,7 @@ namespace EntityFramework.MemoryJoin.Internal
                     return null;
                 case ValuesInjectionMethodInternal.Auto:
                     // Postgres has a huge limit for parameters, whereas MSSQL is just ... 2100 :(
-                    if (provider == KnownProvider.PostgreSQL)
+                    if (provider == KnownProvider.PostgreSql)
                         return null;
                     break;
             }
@@ -252,7 +252,7 @@ namespace EntityFramework.MemoryJoin.Internal
                                 .Append(dateValue.ToString("yyyy-MM-ddTHH:mm:ss.fff"))
                                 .Append("' AS DATETIME)");
                             break;
-                        case KnownProvider.PostgreSQL:
+                        case KnownProvider.PostgreSql:
                             sb.Append("'")
                                 .Append(dateValue.ToString("yyyy-MM-ddTHH:mm:ss.fff"))
                                 .Append("'::date");
@@ -272,7 +272,7 @@ namespace EntityFramework.MemoryJoin.Internal
         static KnownProvider GetKnownProvider(DbCommand command)
         {
             if (command.GetType().Name.StartsWith("Npgsql"))
-                return KnownProvider.PostgreSQL;
+                return KnownProvider.PostgreSql;
             if (command.GetType().Name.StartsWith("SqlCommand"))
                 return KnownProvider.Mssql;
 
