@@ -19,6 +19,12 @@ namespace EntityFramework.MemoryJoin
             .OrderBy(x => x.GetParameters().Length)
             .First();
 
+        static MethodInfo takeMethod = typeof(Queryable)
+            .GetTypeInfo()
+            .GetMethods()
+            .Where(x => x.Name == "Take")
+            .First();
+
         static MemoryJoiner()
         {
             DbInterception.Add(new MemoryJoinerInterceptor());
@@ -73,16 +79,28 @@ namespace EntityFramework.MemoryJoin
 
             var propMapping = allowedMappingDict.GetOrAdd(queryClass, MappingHelper.GetPropertyMappings);
             var entityMapping = MappingHelper.GetEntityMapping<T>(context, queryClass, propMapping);
-
-            PrepareInjection(entityMapping, data, context, queryClass, method);
-
             var baseQuerySet = context.Set(queryClass);
 
-            var middleResult = selectMethod.MakeGenericMethod(queryClass, typeof(T))
-                .Invoke(null, new object[] { baseQuerySet, entityMapping.OutExpression });
+            if (data.Any())
+            {
+                PrepareInjection(entityMapping, data, context, queryClass, method);
 
-            var querySet = (IQueryable<T>)middleResult;
-            return querySet;
+                var middleResult = selectMethod.MakeGenericMethod(queryClass, typeof(T))
+                    .Invoke(null, new object[] { baseQuerySet, entityMapping.OutExpression });
+
+                var querySet = (IQueryable<T>)middleResult;
+                return querySet;
+            }
+            else
+            {
+                var emptyQueryable = takeMethod.MakeGenericMethod(queryClass).Invoke(null, new object[] { baseQuerySet, 0 });
+
+                var middleResult = selectMethod.MakeGenericMethod(queryClass, typeof(T))
+                    .Invoke(null, new object[] { emptyQueryable, entityMapping.OutExpression });
+
+                var querySet = (IQueryable<T>)middleResult;
+                return querySet;
+            }
         }
 
         static void PrepareInjection<T>(

@@ -160,43 +160,57 @@ namespace EntityFramework.MemoryJoin.Internal
             var innerSb = new StringBuilder(20);
             sb.Append("SELECT * FROM (VALUES ");
 
-            var i = 0;
-            var id = 1;
-            foreach (var el in options.Data)
+            if (options.Data.Any())
+            {
+                var i = 0;
+                var id = 1;
+                foreach (var el in options.Data)
+                {
+                    sb.Append("(");
+                    // Let's append Id anyways, as per Issue #1
+
+                    sb.Append(id).Append(", ");
+                    foreach (var columnName in options.ColumnNames)
+                    {
+                        var value = el[columnName];
+                        var stringValue = TryProcessParameterAsString(value,
+                            providerType, innerSb, options.ValuesInjectMethod);
+
+                        if (stringValue != null)
+                        {
+                            sb.Append(stringValue);
+                        }
+                        else
+                        {
+                            var paramName = $"{paramPattern}{i}";
+                            var param = command.CreateParameter();
+                            param.ParameterName = paramName;
+                            param.Value = value;
+                            parameters.Add(param);
+                            sb.Append(paramName);
+
+                            i++;
+                        }
+                        sb.Append(", ");
+                    }
+                    sb.Length -= 2;
+                    sb.Append("), ");
+                    id++;
+                }
+
+                sb.Length -= 2;
+            }
+            else
             {
                 sb.Append("(");
-                // Let's append Id anyways, as per Issue #1
-
-                sb.Append(id).Append(", ");
+                sb.Append("NULL, ");
                 foreach (var columnName in options.ColumnNames)
                 {
-                    var value = el[columnName];
-                    var stringValue = TryProcessParameterAsString(value,
-                        providerType, innerSb, options.ValuesInjectMethod);
-
-                    if (stringValue != null)
-                    {
-                        sb.Append(stringValue);
-                    }
-                    else
-                    {
-                        var paramName = $"{paramPattern}{i}";
-                        var param = command.CreateParameter();
-                        param.ParameterName = paramName;
-                        param.Value = value;
-                        parameters.Add(param);
-                        sb.Append(paramName);
-
-                        i++;
-                    }
-                    sb.Append(", ");
+                    sb.Append("NULL, ");
                 }
                 sb.Length -= 2;
-                sb.Append("), ");
-                id++;
+                sb.Append(")");
             }
-
-            sb.Length -= 2;
 
             sb.Append(") AS ").Append(options.DynamicTableName).Append(" (");
             sb.Append(options.KeyColumnName).Append(", ");
@@ -206,7 +220,13 @@ namespace EntityFramework.MemoryJoin.Internal
                 sb.Append(cname).Append(", ");
             }
             sb.Length -= 2;
+
             sb.Append(")");
+
+            if (!options.Data.Any())
+            {
+                sb.Append(" LIMIT 0");
+            }
         }
 
         private static string TryProcessParameterAsString(
