@@ -12,10 +12,7 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunnerCore.DAL
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            //modelBuilder.Entity<QueryModelClass>()
-            //    .ToTable("__stub_query_data", "dbo");
-            //modelBuilder.Entity<Address>()
-            //    .ToTable("addresses", "dbo");
+            modelBuilder.Entity<Address>().Property("StreetName");
 
             base.OnModelCreating(modelBuilder);
         }

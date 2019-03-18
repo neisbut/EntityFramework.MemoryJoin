@@ -11,7 +11,7 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunnerCore.DAL
         public int AddressId { get; set; }
 
         [Column("street_name"), Required()]
-        public string StreetName { get; set; }
+        public string StreetName;
 
         [Column("house_number")]
         public int HouseNumber { get; set; }

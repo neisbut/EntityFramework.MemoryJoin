@@ -71,16 +71,17 @@ namespace EntityFramework.MemoryJoin.Internal
             var pkColumnName = EFHelper.GetKeyProperty(context, queryClass);
             if (pkColumnName == null)
                 throw new NotSupportedException($"{queryClass.Name} should have PK set");
-            //if (pkColumnName.PropertyType != typeof(Int16) &&
-            //    pkColumnName.PropertyType != typeof(Int32) &&
-            //    pkColumnName.PropertyType != typeof(Int64))
-            //    throw new NotSupportedException("Only numeric primary key is supported (int16, int32, int64)");
 
             var columnNamesDict = EFHelper.GetColumnNames(context, queryClass);
+            var members = typeof(T).GetProperties().Cast<MemberInfo>().Union(typeof(T).GetFields());
 
-            foreach (var prop in typeof(T).GetProperties())
+            foreach (var member in members)
             {
-                var baseType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                var memberType = member.MemberType == MemberTypes.Property ?
+                    ((PropertyInfo)member).PropertyType :
+                    ((FieldInfo)member).FieldType;
+
+                var baseType = Nullable.GetUnderlyingType(memberType) ?? memberType;
                 if (!allowedPropertyMapping.TryGetValue(baseType, out var allowedMappedProps))
                     throw new NotSupportedException("Not supported property type");
 
@@ -88,17 +89,17 @@ namespace EntityFramework.MemoryJoin.Internal
                 if (mapProperty == null)
                     throw new NotSupportedException("Too complex object");
 
-                Expression inExp = Expression.MakeMemberAccess(inParam, prop);
-                if (mapProperty.PropertyType != prop.PropertyType)
+                Expression inExp = Expression.MakeMemberAccess(inParam, member);
+                if (mapProperty.PropertyType != memberType)
                     inExp = Expression.Convert(inExp, mapProperty.PropertyType);
 
                 inMappingPairs.Add(new Tuple<MemberInfo, Expression>(mapProperty, inExp));
 
                 Expression outExp = Expression.MakeMemberAccess(outParam, mapProperty);
-                if (mapProperty.PropertyType != prop.PropertyType)
-                    outExp = Expression.Convert(outExp, prop.PropertyType);
+                if (mapProperty.PropertyType != memberType)
+                    outExp = Expression.Convert(outExp, memberType);
 
-                outMappingPairs.Add(new Tuple<MemberInfo, Expression>(prop, outExp));
+                outMappingPairs.Add(new Tuple<MemberInfo, Expression>(member, outExp));
 
                 allowedProperties.Remove(mapProperty);
 
