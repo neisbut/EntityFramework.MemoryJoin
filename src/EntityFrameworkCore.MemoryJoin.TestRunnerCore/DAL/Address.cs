@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EntityFrameworkCore.MemoryJoin.TestRunnerCore.DAL
 {
-    [Table("addresses", Schema = "public")]
+    [Table("addresses")]
     public class Address
     {
         [Column("address_id"), Key(), DatabaseGenerated(DatabaseGeneratedOption.Identity)]

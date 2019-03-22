@@ -258,12 +258,32 @@ namespace EntityFramework.MemoryJoin.Internal
                 case string strValue:
                     sb.Append("'").Append(strValue.Replace("'", "''")).Append("'");
                     break;
-                case int _:
-                case long _:
                 case float _:
                 case double _:
                 case decimal _:
                     sb.Append(Convert.ToString(value, CultureInfo.InvariantCulture));
+                    break;
+                case int _:
+                case long _:
+                    switch (provider)
+                    {
+                        case KnownProvider.Mssql:
+                            if (value is int)
+                            {
+                                sb.Append(Convert.ToString(value, CultureInfo.InvariantCulture));
+                            }
+                            else
+                            {
+                                sb.Append("CAST(")
+                                    .Append(Convert.ToString(value, CultureInfo.InvariantCulture))
+                                    .Append("AS BIGINT)");
+                            }
+                            break;
+                        default:
+                            sb.Append(Convert.ToString(value, CultureInfo.InvariantCulture));
+                            break;
+                    }
+
                     break;
                 case DateTime dateValue:
                     switch (provider)

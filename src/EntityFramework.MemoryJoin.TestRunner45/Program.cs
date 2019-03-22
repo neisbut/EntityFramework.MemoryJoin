@@ -21,7 +21,7 @@ namespace EntityFramework.MemoryJoin.TestRunner45
                         x.StreetName,
                         x.HouseNumber,
                         Extra = "I'm from local!",
-                        Integer = 123,
+                        Integer = ((long)int.MaxValue) + 20,
                         Float = 321.0f,
                         Date = DateTime.Now
                     })

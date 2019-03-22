@@ -14,8 +14,8 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
         static void Main(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<SampleContext>();
-            optionsBuilder.UseNpgsql("server=localhost;user id=postgres;password=qwerty;database=copy");
-            //optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=copy;Integrated Security=True;Pooling=False");
+            // optionsBuilder.UseNpgsql("server=localhost;user id=postgres;password=qwerty;database=copy");
+            optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=copy;Integrated Security=True;Pooling=False");
             //optionsBuilder.UseLoggerFactory(
             //    new LoggerFactory(new[] { new ConsoleLoggerProvider((_, __) => true, true) }));
 
@@ -33,13 +33,13 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
                     x.HouseNumber,
                     DateTime = DateTime.Now,
                     Extra = "I'm from \n ' \" local!",
-                    Integer = 123,
+                    Integer = ((long)int.MaxValue) + 20,
                     Float = 321.0f,
                     Date = DateTime.Now
                 })
                 .ToList();
 
-                var queryList = context.FromLocalList(localList);
+                var queryList = context.FromLocalList(localList, ValuesInjectionMethod.Auto);
 
                 var efQuery = from addr in context.Addresses
                               join el in queryList on
