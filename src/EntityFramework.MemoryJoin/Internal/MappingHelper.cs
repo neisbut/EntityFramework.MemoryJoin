@@ -9,7 +9,7 @@ using System.Collections;
 using System.Data.Common;
 using System.Collections.Concurrent;
 using System.Globalization;
-#if NETSTANDARD1_5 || NETSTANDARD2_0
+#if NETSTANDARD1_5 || NETSTANDARD2_0 || NETSTANDARD2_1
 using Microsoft.EntityFrameworkCore;
 #else
 using System.Data.Entity;

@@ -16,18 +16,19 @@ namespace EntityFramework.MemoryJoin.Internal
             var metadata = context.Model;
             var entityType = metadata.GetEntityTypes().Single(x => x.ClrType == type);
 
+
             var innerList = entityType
                 .GetProperties()
                 .Where(x => x.PropertyInfo != null)
-                .ToDictionary(x => x.PropertyInfo, x => x.Relational().ColumnName);
-
+                .ToDictionary(x => x.PropertyInfo, x => x.GetColumnName());
+            
             return innerList;
         }
 
         internal static string GetTableName(DbContext context, Type t)
         {
-            var relational = context.Model.FindEntityType(t).Relational();
-            return relational.TableName;
+            var relational = context.Model.FindEntityType(t);
+            return relational.GetTableName();
         }
 
         internal static string GetKeyProperty(DbContext context, Type t)
@@ -36,7 +37,7 @@ namespace EntityFramework.MemoryJoin.Internal
             if (kps.Count > 1)
                 throw new NotSupportedException("Multiple column PK is not supported");
 
-            return kps.First().Relational().ColumnName;
+            return kps.First().GetColumnName();
         }
 
     }
