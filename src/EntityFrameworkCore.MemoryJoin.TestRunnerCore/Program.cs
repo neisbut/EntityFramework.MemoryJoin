@@ -14,8 +14,10 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
         static void Main(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<SampleContext>();
+
             // optionsBuilder.UseNpgsql("server=localhost;user id=postgres;password=qwerty;database=copy");
             optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=copy;Integrated Security=True;Pooling=False");
+
             //optionsBuilder.UseLoggerFactory(
             //    new LoggerFactory(new[] { new ConsoleLoggerProvider((_, __) => true, true) }));
 
@@ -24,7 +26,7 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
 
             FillTestData(context);
 
-            for (var count = 100; count <= 1000; count += 100)
+            for (var count = 0; count <= 1000; count += 100)
             {
                 var localList = GetTestAddressData(count).
                 Select(x => new

@@ -32,7 +32,12 @@ namespace EntityFramework.MemoryJoin.Internal
 
         internal static string GetKeyProperty(DbContext context, Type t)
         {
-            var kps = context.Model.FindEntityType(t).FindPrimaryKey().Properties;
+            var entityType = context.Model.FindEntityType(t);
+            if (entityType == null)
+                throw new InvalidOperationException(
+                    "QueryModelClass is not found in the context. Please check configuration");
+
+            var kps = entityType.FindPrimaryKey().Properties;
             if (kps.Count > 1)
                 throw new NotSupportedException("Multiple column PK is not supported");
 

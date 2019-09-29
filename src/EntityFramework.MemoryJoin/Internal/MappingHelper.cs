@@ -226,7 +226,7 @@ namespace EntityFramework.MemoryJoin.Internal
 
             if (!options.Data.Any())
             {
-                sb.Append(" LIMIT 0");
+                sb.Append(" WHERE 1=0");
             }
         }
 

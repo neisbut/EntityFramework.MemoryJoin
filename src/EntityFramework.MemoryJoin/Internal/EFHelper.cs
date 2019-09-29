@@ -103,6 +103,11 @@ namespace EntityFramework.MemoryJoin.Internal
         internal static string GetKeyProperty(DbContext context, Type t)
         {
             var entityType = GetEntitySet(context, t);
+
+            if (entityType == null)
+                throw new InvalidOperationException(
+                    "QueryModelClass is not found in the context. Please check configuration");
+
             var kps = entityType.ElementType.KeyProperties;
             if (kps.Count > 1)
                 throw new NotSupportedException("Multiple column PK is not supported");
