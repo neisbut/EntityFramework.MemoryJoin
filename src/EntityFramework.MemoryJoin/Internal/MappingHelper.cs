@@ -155,66 +155,111 @@ namespace EntityFramework.MemoryJoin.Internal
             var providerType = TypeToKnownProvider.GetOrAdd(
                 options.ContextType, (t) => GetKnownProvider(command));
 
-            const string paramPattern = "@__gen_q_p";
+            stringBuilder.Append("SELECT * FROM ");
 
-            var sb = stringBuilder;
-            var innerSb = new StringBuilder(20);
-            sb.Append("SELECT * FROM (VALUES ");
+            // SQLite doesn't support column aliasing in the FROM clause. Instead we have to do it
+            // in a WITH clause. For example "SELECT * FROM (WITH tempTable(col1, col2, col3) AS (VALUES (1, 2, 3)) SELECT * FROM tempTable)".
+            if (providerType == KnownProvider.Sqlite)
+            {
+                stringBuilder.Append("( WITH ");
+                AppendColumnAliases(stringBuilder, options);
+                stringBuilder.Append(" AS ");
+            }
 
             if (options.Data.Any())
             {
-                var i = 0;
-                var id = 1;
-                foreach (var el in options.Data)
-                {
-                    sb.Append("(");
-                    // Let's append Id anyways, as per Issue #1
-
-                    sb.Append(id).Append(", ");
-                    foreach (var columnName in options.ColumnNames)
-                    {
-                        var value = el[columnName];
-                        var stringValue = TryProcessParameterAsString(value,
-                            providerType, innerSb, options.ValuesInjectMethod);
-
-                        if (stringValue != null)
-                        {
-                            sb.Append(stringValue);
-                        }
-                        else
-                        {
-                            var paramName = $"{paramPattern}{i}";
-                            var param = command.CreateParameter();
-                            param.ParameterName = paramName;
-                            param.Value = value;
-                            parameters.Add(param);
-                            sb.Append(paramName);
-
-                            i++;
-                        }
-                        sb.Append(", ");
-                    }
-                    sb.Length -= 2;
-                    sb.Append("), ");
-                    id++;
-                }
-
-                sb.Length -= 2;
+                AppendRowsAsValues(stringBuilder, options, command, parameters, providerType);
             }
             else
             {
-                sb.Append("(");
-                sb.Append("NULL, ");
-                foreach (var columnName in options.ColumnNames)
-                {
-                    sb.Append("NULL, ");
-                }
-                sb.Length -= 2;
-                sb.Append(")");
+                // if we have no data, we just generate 1 row consisting of null, because we need one row to define a table
+                AppendNullRow(stringBuilder, options.ColumnNames.Length + 1); // + 1 since primary key column is not included.
             }
 
-            sb.Append(") AS ").Append(options.DynamicTableName).Append(" (");
-            sb.Append(options.KeyColumnName).Append(", ");
+            if (providerType == KnownProvider.Sqlite)
+            {
+                stringBuilder.Append($" SELECT * FROM {options.DynamicTableName} )");
+            }
+            else
+            {
+                stringBuilder.Append("AS ");
+                AppendColumnAliases(stringBuilder, options);
+            }
+
+            // if we have no data, the in-memory table will consist of a null row. We don't want to return any result. As such,
+            // append a condition which will always be false.
+            if (!options.Data.Any())
+            {
+                stringBuilder.Append(" WHERE 1=0");
+            }
+        }
+
+        private static void AppendRowsAsValues(StringBuilder sb, InterceptionOptions options, DbCommand command, IList parameters, KnownProvider providerType)
+        {
+            const string paramPattern = "@__gen_q_p";
+
+            var innerSb = new StringBuilder(20);
+            var i = 0;
+            var id = 1;
+
+            sb.Append("( VALUES ");
+
+            foreach (var el in options.Data)
+            {
+                sb.Append("(");
+                // Let's append Id anyways, as per Issue #1
+
+                sb.Append(id).Append(", ");
+                foreach (var columnName in options.ColumnNames)
+                {
+                    var value = el[columnName];
+                    var stringValue = TryProcessParameterAsString(value,
+                        providerType, innerSb, options.ValuesInjectMethod);
+
+                    if (stringValue != null)
+                    {
+                        sb.Append(stringValue);
+                    }
+                    else
+                    {
+                        var paramName = $"{paramPattern}{i}";
+                        var param = command.CreateParameter();
+                        param.ParameterName = paramName;
+                        param.Value = value;
+                        parameters.Add(param);
+                        sb.Append(paramName);
+
+                        i++;
+                    }
+                    sb.Append(", ");
+                }
+                sb.Length -= ", ".Length;
+                sb.Append("), ");
+                id++;
+            }
+
+            sb.Length -= ", ".Length;
+            sb.Append(")");
+        }
+
+        private static void AppendNullRow(StringBuilder sb, int numberOfColumns)
+        {
+            sb.Append("(VALUES (");
+            for (var i = 0; i < numberOfColumns; i++)
+            {
+                sb.Append("NULL, ");
+            }
+            sb.Length -= 2;
+            sb.Append("))");
+        }
+
+        private static void AppendColumnAliases(StringBuilder sb, InterceptionOptions options)
+        {
+            
+            sb.Append(options.DynamicTableName)
+                .Append("(")
+                .Append(options.KeyColumnName)
+                .Append(", ");
 
             foreach (var cname in options.ColumnNames)
             {
@@ -223,11 +268,6 @@ namespace EntityFramework.MemoryJoin.Internal
             sb.Length -= 2;
 
             sb.Append(")");
-
-            if (!options.Data.Any())
-            {
-                sb.Append(" WHERE 1=0");
-            }
         }
 
         private static string TryProcessParameterAsString(
@@ -312,10 +352,14 @@ namespace EntityFramework.MemoryJoin.Internal
 
         static KnownProvider GetKnownProvider(DbCommand command)
         {
-            if (command.GetType().Name.StartsWith("Npgsql"))
+            var commandTypeName = command.GetType().Name;
+
+            if (commandTypeName.StartsWith("Npgsql"))
                 return KnownProvider.PostgreSql;
-            if (command.GetType().Name.StartsWith("SqlCommand"))
+            if (commandTypeName.StartsWith("SqlCommand"))
                 return KnownProvider.Mssql;
+            if (commandTypeName.Contains("SqliteCommand"))
+                return KnownProvider.Sqlite;
 
             return KnownProvider.Unknown;
         }
