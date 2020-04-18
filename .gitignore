@@ -290,3 +290,4 @@ __pycache__/
 /src/Package.nuspec
 /src/lib/net45/*.dll
 /src/lib/netstandard2.0/*.dll
+/src/lib/netstandard2.1/*.dll

@@ -1,6 +1,7 @@
 ﻿using EntityFramework.MemoryJoin.TestRunner45.DAL;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 
@@ -10,6 +11,11 @@ namespace EntityFramework.MemoryJoin.TestRunner45
     {
         static void Main(string[] args)
         {
+
+#if NETSTANDARD
+            DbProviderFactories.RegisterFactory("Npgsql", Npgsql.NpgsqlFactory.Instance);
+#endif
+
             var context = new SampleContext("DefaultConnection");
             FillTestData(context);
 

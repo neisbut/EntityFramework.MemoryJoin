@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>TRACE;NETSTANDARD</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;NETSTANDARD</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\EntityFramework.MemoryJoin.TestRunner45\DAL\Address.cs" Link="DAL\Address.cs" />
+    <Compile Include="..\EntityFramework.MemoryJoin.TestRunner45\DAL\Price.cs" Link="DAL\Price.cs" />
+    <Compile Include="..\EntityFramework.MemoryJoin.TestRunner45\DAL\SampleContext.cs" Link="DAL\SampleContext.cs" />
+    <Compile Include="..\EntityFramework.MemoryJoin.TestRunner45\Program.cs" Link="Program.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DAL\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EntityFramework" Version="6.3.0" />
+    <PackageReference Include="EntityFramework6.Npgsql" Version="6.3.0" />
+    <PackageReference Include="EntityFrameworkCore.MemoryJoin.Ef6" Version="0.5.9" />
+  </ItemGroup>
+
+
+</Project>
