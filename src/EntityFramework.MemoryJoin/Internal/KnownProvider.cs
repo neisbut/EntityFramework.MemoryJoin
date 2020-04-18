@@ -6,6 +6,8 @@
 
         Mssql = 1,
 
-        PostgreSql = 2
+        PostgreSql = 2,
+
+        Sqlite = 3,
     }
 }

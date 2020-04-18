@@ -2,7 +2,7 @@
 Extension for EntityFramework for joins to in-memory data. Both Entity Framework 6 and Entity Framework Core are supported!
 Used SQL standard syntax. 
 
-Tested with: MSSQL and PostgreSQL. (others should also work as standard EF API and SQL standard syntax are used)
+Tested with: MSSQL, PostgreSQL, and SQLite. (others should also work as standard EF API and SQL standard syntax are used)
 
 ## Usage
 
