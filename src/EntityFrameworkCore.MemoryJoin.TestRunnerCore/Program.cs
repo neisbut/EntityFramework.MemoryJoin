@@ -15,8 +15,8 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
         {
             var optionsBuilder = new DbContextOptionsBuilder<SampleContext>();
 
-            // optionsBuilder.UseNpgsql("server=localhost;user id=postgres;password=qwerty;database=copy");
-            optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=copy;Integrated Security=True;Pooling=False");
+            optionsBuilder.UseNpgsql("server=localhost;user id=postgres;password=qwerty;database=copy");
+            //optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=copy;Integrated Security=True;Pooling=False");
 
             //optionsBuilder.UseLoggerFactory(
             //    new LoggerFactory(new[] { new ConsoleLoggerProvider((_, __) => true, true) }));

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2009
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29324.140
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework.MemoryJoin.TestRunner45", "EntityFramework.MemoryJoin.TestRunner45\EntityFramework.MemoryJoin.TestRunner45.csproj", "{1AD8B2B8-6163-41B8-9D85-C3F8805E8580}"
 EndProject
@@ -14,8 +14,13 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{B4EAFAEC-6EBC-4484-9519-FA879A7FD083}"
 	ProjectSection(SolutionItems) = preProject
 		CreatePackage.bat = CreatePackage.bat
+		Package-ef6.nuspec = Package-ef6.nuspec
 		Package.nuspec = Package.nuspec
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFrameworkCore.MemoryJoin.Ef6", "EntityFrameworkCore.MemoryJoin.Ef6\EntityFrameworkCore.MemoryJoin.Ef6.csproj", "{5500971F-0052-4453-84E2-85167F61E5D5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFrameworkCore.MemoryJoin.TestRunnerEf6", "EntityFrameworkCore.MemoryJoin.TestRunnerEf6\EntityFrameworkCore.MemoryJoin.TestRunnerEf6.csproj", "{93A24EF3-A719-46E2-8796-F3022B741699}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +44,14 @@ Global
 		{26B3DE1A-5E61-4876-9ED0-21F40D149E6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26B3DE1A-5E61-4876-9ED0-21F40D149E6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26B3DE1A-5E61-4876-9ED0-21F40D149E6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5500971F-0052-4453-84E2-85167F61E5D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5500971F-0052-4453-84E2-85167F61E5D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5500971F-0052-4453-84E2-85167F61E5D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5500971F-0052-4453-84E2-85167F61E5D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93A24EF3-A719-46E2-8796-F3022B741699}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93A24EF3-A719-46E2-8796-F3022B741699}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93A24EF3-A719-46E2-8796-F3022B741699}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93A24EF3-A719-46E2-8796-F3022B741699}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
