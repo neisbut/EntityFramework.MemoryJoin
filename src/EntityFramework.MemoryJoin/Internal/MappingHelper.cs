@@ -9,6 +9,7 @@ using System.Collections;
 using System.Data.Common;
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Threading;
 #if EFCore
 using Microsoft.EntityFrameworkCore;
 #else
@@ -21,6 +22,8 @@ namespace EntityFramework.MemoryJoin.Internal
     {
         private static readonly ConcurrentDictionary<Type, KnownProvider> TypeToKnownProvider =
             new ConcurrentDictionary<Type, KnownProvider>();
+
+        static int parametersSequence = 0;
 
         private static void ValidateAndExtendMapping(Dictionary<Type, PropertyInfo[]> mapping)
         {
@@ -196,7 +199,11 @@ namespace EntityFramework.MemoryJoin.Internal
 
         private static void AppendRowsAsValues(StringBuilder sb, InterceptionOptions options, DbCommand command, IList parameters, KnownProvider providerType)
         {
-            const string paramPattern = "@__gen_q_p";
+            string paramPattern = "@__gen_q_p_";
+
+            Interlocked.Increment(ref parametersSequence);
+
+            paramPattern = paramPattern + parametersSequence + "_";
 
             var innerSb = new StringBuilder(20);
             var i = 0;

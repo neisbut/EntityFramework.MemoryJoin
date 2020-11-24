@@ -15,8 +15,8 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
         {
             var optionsBuilder = new DbContextOptionsBuilder<SampleContext>();
 
-            //optionsBuilder.UseNpgsql("server=localhost;user id=postgres;password=qwerty;database=copy");
-            optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=copy;Integrated Security=True;Pooling=False");
+            optionsBuilder.UseNpgsql("server=localhost;user id=postgres;password=qwerty;database=copy");
+            //optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=copy;Integrated Security=True;Pooling=False");
 
             //optionsBuilder.UseLoggerFactory(
             //    new LoggerFactory(new[] { new ConsoleLoggerProvider((_, __) => true, true) }));
@@ -64,6 +64,24 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
                 sw.Stop();
                 Console.WriteLine($"Success, requested: {count}, retrieved: {result.Count} elements in {sw.Elapsed}");
             }
+
+            // test double queries
+            var query1 = context.FromLocalList(GetTestAddressData(10));
+            var query2 = context.FromLocalList(GetTestAddressData(10));
+
+            var efQuery2 = from addr in context.Addresses
+                          join el1 in query1 on addr.StreetName equals el1.StreetName
+                          join el2 in query2 on addr.HouseNumber equals el2.HouseNumber
+                          select new
+                          {
+                              addr.AddressId,
+                              el1.StreetName,
+                              el2.HouseNumber
+                          };
+
+            var dblRes = efQuery2.ToArray();
+            Console.WriteLine("Double query executed...");
+
             Console.ReadLine();
         }
 
@@ -91,7 +109,7 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
             if (context.Addresses.Any())
                 return;
 
-            var data = GetTestAddressData(100000);
+            var data = GetTestAddressData(10000);
 
             context.Addresses.AddRange(data);
             context.SaveChanges();
