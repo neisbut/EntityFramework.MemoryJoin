@@ -211,7 +211,11 @@ namespace EntityFramework.MemoryJoin.Internal
 
         private static void AppendRowsAsValues(StringBuilder sb, InterceptionOptions options, DbCommand command, IList parameters, KnownProvider providerType)
         {
-            string paramPattern = "@__gen_q_p_";
+#if EFCore
+            string paramPattern = EntityFrameworkCore.MemoryJoin.MemoryJoiner.ParametersPrefix;
+#else
+            string paramPattern = EntityFramework.MemoryJoin.MemoryJoiner.ParametersPrefix;
+#endif
 
             Interlocked.Increment(ref parametersSequence);
 

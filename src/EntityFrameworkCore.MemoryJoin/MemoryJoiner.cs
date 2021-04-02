@@ -13,6 +13,11 @@ namespace EntityFrameworkCore.MemoryJoin
 
     public static class MemoryJoiner
     {
+        /// <summary>
+        /// Parameter names prefix which is used in SQL expression
+        /// </summary>
+        public static string ParametersPrefix { get; set; } = "@__gen_q_p_";
+
         static MethodInfo selectMethod = typeof(Queryable)
             .GetTypeInfo()
             .GetMethods()
