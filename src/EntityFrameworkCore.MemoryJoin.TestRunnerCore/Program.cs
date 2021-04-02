@@ -37,7 +37,9 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
                     Extra = "I'm from \n ' \" local!",
                     Integer = ((long)int.MaxValue) + 20,
                     Float = 321.0f,
-                    Date = DateTime.Now
+                    Date = DateTime.Now,
+                    Bool = true,
+                    Guid = Guid.NewGuid()
                 })
                 .ToList();
 
@@ -56,7 +58,9 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
                                   el.Extra,
                                   el.Integer,
                                   el.Float,
-                                  el.DateTime
+                                  el.DateTime,
+                                  el.Guid,
+                                  el.Bool
                               };
 
                 var sw = Stopwatch.StartNew();

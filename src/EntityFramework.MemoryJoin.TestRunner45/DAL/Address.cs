@@ -22,6 +22,12 @@ namespace EntityFramework.MemoryJoin.TestRunner45.DAL
         [Column("postal_code"), Required()]
         public string PostalCode { get; set; }
 
+        [Column("address_guid")]
+        public Guid AddressGuid { get; set; }
+
+        [Column("address_bool")]
+        public bool AddressBool { get; set; }
+
         [Column("created_at"), DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public DateTime CreatedAt { get; set; }
     }

@@ -27,11 +27,11 @@ namespace EntityFramework.MemoryJoin.Internal
 
         private static void ValidateAndExtendMapping(Dictionary<Type, PropertyInfo[]> mapping)
         {
-            if (!mapping.ContainsKey(typeof(long)))
-                throw new InvalidOperationException("Please include at least one property with `Long` type");
+            //if (!mapping.ContainsKey(typeof(long)))
+            //    throw new InvalidOperationException("Please include at least one property with `Long` type");
 
-            if (!mapping.ContainsKey(typeof(double)))
-                throw new InvalidOperationException("Please include at least one property with `Double` type");
+            //if (!mapping.ContainsKey(typeof(double)))
+            //    throw new InvalidOperationException("Please include at least one property with `Double` type");
 
             if (!mapping.ContainsKey(typeof(int)))
                 mapping[typeof(int)] = mapping[typeof(long)];
@@ -41,6 +41,9 @@ namespace EntityFramework.MemoryJoin.Internal
 
             if (!mapping.ContainsKey(typeof(decimal)))
                 mapping[typeof(decimal)] = mapping[typeof(Double)];
+
+            if (!mapping.ContainsKey(typeof(bool)))
+                mapping[typeof(bool)] = mapping[typeof(long)];
         }
 
         internal static Dictionary<Type, PropertyInfo[]> GetPropertyMappings(Type queryClass)
@@ -90,7 +93,7 @@ namespace EntityFramework.MemoryJoin.Internal
 
                 var mapProperty = allowedMappedProps.FirstOrDefault(x => allowedProperties.Contains(x));
                 if (mapProperty == null)
-                    throw new NotSupportedException("Too complex object");
+                    throw new NotSupportedException($"Too complex object, need more properties of '{memberType.Name}' type in '{queryClass.Name}' class");
 
                 Expression inExp = Expression.MakeMemberAccess(inParam, member);
                 if (mapProperty.PropertyType != memberType)
@@ -100,7 +103,16 @@ namespace EntityFramework.MemoryJoin.Internal
 
                 Expression outExp = Expression.MakeMemberAccess(outParam, mapProperty);
                 if (mapProperty.PropertyType != memberType)
-                    outExp = Expression.Convert(outExp, memberType);
+                {
+                    if (memberType == typeof(bool))
+                    {
+                        outExp = Expression.Equal(Expression.Convert(outExp, typeof(int)), Expression.Constant(1));
+                    }
+                    else
+                    {
+                        outExp = Expression.Convert(outExp, memberType);
+                    }
+                }
 
                 outMappingPairs.Add(new Tuple<MemberInfo, Expression>(member, outExp));
 
@@ -262,7 +274,7 @@ namespace EntityFramework.MemoryJoin.Internal
 
         private static void AppendColumnAliases(StringBuilder sb, InterceptionOptions options)
         {
-            
+
             sb.Append(options.DynamicTableName)
                 .Append("(")
                 .Append(options.KeyColumnName)
@@ -347,6 +359,26 @@ namespace EntityFramework.MemoryJoin.Internal
                             break;
                         default:
                             return null;
+                    }
+
+                    break;
+                case Guid _:
+
+                    switch (provider)
+                    {
+                        case KnownProvider.PostgreSql:
+                                sb.Append("CAST('")
+                                    .Append(Convert.ToString(value, CultureInfo.InvariantCulture))
+                                    .Append("' AS UUID)");
+                            break;
+                        case KnownProvider.Mssql:
+                            sb.Append("CONVERT(uniqueidentifier, '")
+                                    .Append(Convert.ToString(value, CultureInfo.InvariantCulture))
+                                    .Append("')");
+                            break;
+                        default:
+                            sb.Append("'").Append(value).Append("'");
+                            break;
                     }
 
                     break;

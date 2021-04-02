@@ -29,11 +29,13 @@ namespace EntityFramework.MemoryJoin.TestRunner45
                         Extra = "I'm from local!",
                         Integer = ((long)int.MaxValue) + 20,
                         Float = 321.0f,
-                        Date = DateTime.Now
+                        Date = DateTime.Now,
+                        Guid = Guid.NewGuid(),
+                        Bool = true
                     })
                     .ToList();
 
-                var queryList = context.FromLocalList(localList);
+                var queryList = context.FromLocalList(localList, ValuesInjectionMethod.ViaSqlQueryBody);
                 // var queryList2 = context.GetQueryable(localList);
 
                 var efQuery = from addr in context.Addresses
@@ -71,7 +73,9 @@ namespace EntityFramework.MemoryJoin.TestRunner45
                     StreetName = streets[i % streets.Length],
                     HouseNumber = i + 1,
                     PostalCode = codes[i % codes.Length],
-                    ExtraHouseNumber = extraNumbers[i % extraNumbers.Length]
+                    ExtraHouseNumber = extraNumbers[i % extraNumbers.Length],
+                    AddressGuid = Guid.NewGuid(),
+                    AddressBool = i % 1 == 1
                 }).ToList();
 
             return data;
