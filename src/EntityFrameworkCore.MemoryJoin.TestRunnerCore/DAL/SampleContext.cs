@@ -14,6 +14,8 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunnerCore.DAL
         {
             modelBuilder.Entity<Address>().Property("StreetName");
 
+            modelBuilder.Entity<QueryModelClass>().ToTable("betterName", "schema");
+
             base.OnModelCreating(modelBuilder);
         }
     }
