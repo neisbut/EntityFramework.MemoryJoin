@@ -61,5 +61,3 @@ Tested with: MSSQL, PostgreSQL, and SQLite. (others should also work as standard
        
        // Query will be executed on DB server
        var = efQuery.ToList();
-       
-Some notes on how it works are [here](http://tsherlock.tech/2018/03/20/joining-in-memory-list-to-entity-framework-query/)
