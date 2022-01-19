@@ -11,29 +11,45 @@ namespace EntityFramework.MemoryJoin
 {
     internal class MemoryJoinerInterceptor : IDbCommandInterceptor
     {
-        private static readonly ConcurrentDictionary<DbContext, InterceptionOptions> InterceptionOptions =
-            new ConcurrentDictionary<DbContext, InterceptionOptions>();
+        private static readonly ConcurrentDictionary<DbContext, List<InterceptionOptions>> InterceptionOptions =
+            new ConcurrentDictionary<DbContext, List<InterceptionOptions>>();
+
+        private static readonly Object Locker = new object();
 
         internal static void SetInterception(DbContext context, InterceptionOptions options)
         {
-            InterceptionOptions[context] = options;
+            lock (Locker)
+            {
+                if (!InterceptionOptions.TryGetValue(context, out var opts))
+                {
+                    opts = new List<InterceptionOptions>();
+                    InterceptionOptions[context] = opts;
+                }
+
+                opts.Add(options);
+            }
         }
 
-        internal static bool IsInterceptionEnabled(IEnumerable<DbContext> contexts, out InterceptionOptions options)
+        internal static bool IsInterceptionEnabled(IEnumerable<DbContext> contexts, bool removeContextOptions,
+            out List<InterceptionOptions> options)
         {
-            options = null;
-            using (var enumerator = contexts.GetEnumerator())
+            lock (Locker)
             {
-                if (!enumerator.MoveNext()) return false;
+                options = null;
+                using (var enumerator = contexts.GetEnumerator())
+                {
+                    if (!enumerator.MoveNext()) return false;
 
-                var firstOne = enumerator.Current;
-                var result = firstOne != null &&
-                             InterceptionOptions.TryGetValue(firstOne, out options) &&
-                             !enumerator.MoveNext();
-                if (result)
-                    InterceptionOptions.TryRemove(firstOne, out options);
+                    var firstOne = enumerator.Current;
+                    var result = firstOne != null &&
+                                 InterceptionOptions.TryGetValue(firstOne, out options) &&
+                                 !enumerator.MoveNext();
 
-                return result;
+                    if (result && removeContextOptions)
+                        InterceptionOptions.TryRemove(firstOne, out _);
+
+                    return result;
+                }
             }
         }
 
@@ -43,7 +59,7 @@ namespace EntityFramework.MemoryJoin
 
         public void NonQueryExecuting(DbCommand command, DbCommandInterceptionContext<int> interceptionContext)
         {
-            if (IsInterceptionEnabled(interceptionContext.DbContexts, out var opts))
+            if (IsInterceptionEnabled(interceptionContext.DbContexts, true, out var opts))
                 ModifyQuery(command, opts);
         }
 
@@ -53,7 +69,7 @@ namespace EntityFramework.MemoryJoin
 
         public void ReaderExecuting(DbCommand command, DbCommandInterceptionContext<DbDataReader> interceptionContext)
         {
-            if (IsInterceptionEnabled(interceptionContext.DbContexts, out var opts))
+            if (IsInterceptionEnabled(interceptionContext.DbContexts, true, out var opts))
                 ModifyQuery(command, opts);
         }
 
@@ -63,34 +79,50 @@ namespace EntityFramework.MemoryJoin
 
         public void ScalarExecuting(DbCommand command, DbCommandInterceptionContext<object> interceptionContext)
         {
-            if (IsInterceptionEnabled(interceptionContext.DbContexts, out var opts))
+            if (IsInterceptionEnabled(interceptionContext.DbContexts, true, out var opts))
                 ModifyQuery(command, opts);
         }
 
-        private static void ModifyQuery(DbCommand command, InterceptionOptions opts)
+        private static void ModifyQuery(DbCommand command, List<InterceptionOptions> opts)
         {
-            var tableNamePosition = command.CommandText.IndexOf(opts.QueryTableName, StringComparison.Ordinal);
-            if (tableNamePosition < 0)
-                return;
-
-            var nextSpace = command.CommandText.IndexOf(' ', tableNamePosition);
-            var prevSpace = command.CommandText.LastIndexOf(' ', tableNamePosition);
-            var tableFullName = command.CommandText.Substring(prevSpace + 1, nextSpace - prevSpace - 1);
-
-            command.CommandText = command.CommandText.Replace(tableFullName, opts.DynamicTableName);
-
             var sb = new StringBuilder(100);
-            sb.Append("WITH ").Append(opts.DynamicTableName).Append(" AS (").AppendLine();
-            MappingHelper.ComposeTableSql(
-                sb, opts,
-                command,
-                command.Parameters);
+            sb.Append("WITH ");
+            var counter = 0;
+            var commandStart = 0;
+            foreach (var currentOptions in opts)
+            {
+                var tableNamePosition =
+                    command.CommandText.IndexOf(currentOptions.QueryTableName, StringComparison.Ordinal);
+                if (tableNamePosition < 0)
+                    continue;
 
-            sb.AppendLine();
-            sb.AppendLine(")");
-            sb.Append(command.CommandText);
+                commandStart = command.CommandText.LastIndexOf(';', tableNamePosition) + 1;
 
-            command.CommandText = sb.ToString();
+                var nextSpace = command.CommandText.IndexOf(' ', tableNamePosition);
+                var prevSpace = command.CommandText.LastIndexOf(' ', tableNamePosition);
+                var tableFullName = command.CommandText.Substring(prevSpace + 1, nextSpace - prevSpace - 1);
+
+                command.CommandText = command.CommandText.Replace(tableFullName, currentOptions.DynamicTableName);
+
+                if (counter > 0)
+                {
+                    sb.AppendLine(",");
+                }
+
+                sb.Append(currentOptions.DynamicTableName).Append(" AS (").AppendLine();
+
+                MappingHelper.ComposeTableSql(
+                    sb, currentOptions,
+                    command,
+                    command.Parameters);
+
+                sb.AppendLine();
+                sb.AppendLine(")");
+
+                counter++;
+            }
+
+            command.CommandText = command.CommandText.Insert(commandStart, sb.ToString());
         }
     }
 }

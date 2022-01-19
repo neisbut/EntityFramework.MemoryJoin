@@ -77,11 +77,12 @@ namespace EntityFramework.MemoryJoin
         /// <returns></returns>
         public static IQueryable<T> FromLocalList<T>(this DbContext context, IList<T> data, Type queryClass, ValuesInjectionMethod method)
         {
+            var tableName = EFHelper.GetTableName(context, queryClass);
             if (MemoryJoinerInterceptor.IsInterceptionEnabled(
-                new[] { context }, out InterceptionOptions opts))
+                    new[] {context}, false, out var opts) && opts.Any(x => x.QueryTableName == tableName))
             {
                 throw new InvalidOperationException(
-                    "Only one data set can be applied to single DbContext before actuall DB request is done");
+                    "A table name (attribute on queryClass) can be applied only once to single DbContext before actual DB request is done");
             }
 
             var propMapping = allowedMappingDict.GetOrAdd(queryClass, MappingHelper.GetPropertyMappings);
@@ -117,20 +118,22 @@ namespace EntityFramework.MemoryJoin
             Type queryClass,
             ValuesInjectionMethod method)
         {
+            var tableName = EFHelper.GetTableName(context, queryClass);
+
             var opts = new InterceptionOptions
             {
-                QueryTableName = EFHelper.GetTableName(context, queryClass),
+                QueryTableName = tableName,
                 ColumnNames = mapping.UserProperties.Keys.ToArray(),
                 Data = data
                     .Select(x => mapping.UserProperties.ToDictionary(y => y.Key, y => y.Value(x)))
                     .ToList(),
                 ContextType = context.GetType(),
                 ValuesInjectMethod = (ValuesInjectionMethodInternal)method,
-                KeyColumnName = mapping.KeyColumnName
+                KeyColumnName = mapping.KeyColumnName,
+                DynamicTableName = tableName
             };
 
             MemoryJoinerInterceptor.SetInterception(context, opts);
         }
-
     }
 }
