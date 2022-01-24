@@ -31,19 +31,21 @@ namespace EntityFramework.MemoryJoin
         }
 
         internal static bool IsInterceptionEnabled(IEnumerable<DbContext> contexts, bool removeContextOptions,
-            out List<InterceptionOptions> options)
+            out IReadOnlyList<InterceptionOptions> options)
         {
             lock (Locker)
             {
                 options = null;
+                List<InterceptionOptions> internalOptions = null;
                 using (var enumerator = contexts.GetEnumerator())
                 {
                     if (!enumerator.MoveNext()) return false;
 
                     var firstOne = enumerator.Current;
                     var result = firstOne != null &&
-                                 InterceptionOptions.TryGetValue(firstOne, out options) &&
+                                 InterceptionOptions.TryGetValue(firstOne, out internalOptions) &&
                                  !enumerator.MoveNext();
+                    options = internalOptions;
 
                     if (result && removeContextOptions)
                         InterceptionOptions.TryRemove(firstOne, out _);
@@ -83,7 +85,7 @@ namespace EntityFramework.MemoryJoin
                 ModifyQuery(command, opts);
         }
 
-        private static void ModifyQuery(DbCommand command, List<InterceptionOptions> opts)
+        private static void ModifyQuery(DbCommand command, IReadOnlyList<InterceptionOptions> opts)
         {
             var sb = new StringBuilder(100);
             sb.Append("WITH ");
