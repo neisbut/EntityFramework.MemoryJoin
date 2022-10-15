@@ -214,9 +214,6 @@ namespace EntityFramework.MemoryJoin.Internal
 #else
             string paramPattern = EntityFramework.MemoryJoin.MemoryJoiner.ParametersPrefix;
 #endif
-
-            paramPattern += "_";
-
             var innerSb = new StringBuilder(20);
             var i = 0;
             var id = 1;
