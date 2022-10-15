@@ -23,8 +23,6 @@ namespace EntityFramework.MemoryJoin.Internal
         private static readonly ConcurrentDictionary<Type, KnownProvider> TypeToKnownProvider =
             new ConcurrentDictionary<Type, KnownProvider>();
 
-        static int parametersSequence = 0;
-
         private static void ValidateAndExtendMapping(Dictionary<Type, PropertyInfo[]> mapping)
         {
             //if (!mapping.ContainsKey(typeof(long)))
@@ -217,9 +215,7 @@ namespace EntityFramework.MemoryJoin.Internal
             string paramPattern = EntityFramework.MemoryJoin.MemoryJoiner.ParametersPrefix;
 #endif
 
-            Interlocked.Increment(ref parametersSequence);
-
-            paramPattern = paramPattern + parametersSequence + "_";
+            paramPattern += "_";
 
             var innerSb = new StringBuilder(20);
             var i = 0;
