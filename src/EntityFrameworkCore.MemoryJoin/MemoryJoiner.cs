@@ -162,7 +162,7 @@ namespace EntityFrameworkCore.MemoryJoin
                 var set = setMethod.MakeGenericMethod(queryClass)
                     .Invoke(context, new object[] { });
 
-                if (fromSqlMethod != null)
+                if (fromSqlMethod != null && rawSqlStringType != null)
                 {
                     // .Net Core < 5 case
                     var rawSqlString = Activator.CreateInstance(rawSqlStringType, new object[] { sb.ToString() });
