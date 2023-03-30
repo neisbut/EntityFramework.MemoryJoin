@@ -15,6 +15,7 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
         {
             var optionsBuilder = new DbContextOptionsBuilder<SampleContext>();
 
+            optionsBuilder.AddInterceptors(new MemoryJoinerInterceptor());
             optionsBuilder.UseNpgsql("server=localhost;user id=postgres;password=qwerty;database=copy");
             //optionsBuilder.UseSqlServer("Data Source=localhost;Initial Catalog=copy;Integrated Security=True;Pooling=False");
 
@@ -86,8 +87,56 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
             var dblRes = efQuery2.ToArray();
             Console.WriteLine("Double query executed...");
 
+            Console.WriteLine("Going to use interception mode");
+            MemoryJoiner.MemoryJoinerMode = MemoryJoinerMode.UsingInterception;
+
+            for (var count = 0; count <= 1000; count += 100)
+            {
+                var localList = GetTestAddressData(count).
+                Select(x => new
+                {
+                    x.StreetName,
+                    x.HouseNumber,
+                    DateTime = DateTime.Now,
+                    Extra = "I'm from \n ' \" local!",
+                    Integer = ((long)int.MaxValue) + 20,
+                    Float = 321.0f,
+                    Date = DateTime.Now,
+                    Bool = true,
+                    Guid = Guid.NewGuid()
+                })
+                .ToList();
+
+                var queryList = context.FromLocalList(localList, ValuesInjectionMethod.Auto);
+
+                var efQuery = from addr in context.Addresses
+                              join el in queryList on
+                                new { addr.StreetName, addr.HouseNumber } equals
+                                new { el.StreetName, el.HouseNumber }
+                              select new
+                              {
+                                  addr.AddressId,
+                                  addr.CreatedAt,
+                                  addr.StreetName,
+                                  addr.HouseNumber,
+                                  el.Extra,
+                                  el.Integer,
+                                  el.Float,
+                                  el.DateTime,
+                                  el.Guid,
+                                  el.Bool
+                              };
+
+                var sw = Stopwatch.StartNew();
+                var result = efQuery.ToList();
+                sw.Stop();
+                Console.WriteLine($"Success, requested: {count}, retrieved: {result.Count} elements in {sw.Elapsed}");
+            }
+
             Console.ReadLine();
         }
+
+        
 
         static List<Address> GetTestAddressData(int count)
         {

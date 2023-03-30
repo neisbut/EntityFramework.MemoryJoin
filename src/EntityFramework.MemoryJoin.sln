@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29324.140
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33516.290
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFramework.MemoryJoin.TestRunner45", "EntityFramework.MemoryJoin.TestRunner45\EntityFramework.MemoryJoin.TestRunner45.csproj", "{1AD8B2B8-6163-41B8-9D85-C3F8805E8580}"
 EndProject
