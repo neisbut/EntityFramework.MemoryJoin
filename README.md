@@ -61,3 +61,8 @@ Tested with: MSSQL, PostgreSQL, and SQLite. (others should also work as standard
        
        // Query will be executed on DB server
        var = efQuery.ToList();
+## References
+
+- [Large memory grant for joined tables](https://dba.stackexchange.com/questions/302770/large-memory-grant-for-joined-tables)
+- [JOIN local collection and DbSet](https://sudonull.com/post/3707-JOIN-local-collection-and-DbSet-in-the-Entity-Framework)
+
