@@ -288,6 +288,7 @@ __pycache__/
 *.xsd.cs
 /src/CreatePackage.bat
 /src/Package.nuspec
-/src/lib/net45/*.dll
-/src/lib/netstandard2.0/*.dll
-/src/lib/netstandard2.1/*.dll
+/src/lib/
+/src/lib-ef6/
+/src/Package-ef6.nuspec
+/src/nuspec.xsd

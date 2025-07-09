@@ -75,14 +75,14 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
             var query2 = context.FromLocalList(GetTestAddressData(10));
 
             var efQuery2 = from addr in context.Addresses
-                          join el1 in query1 on addr.StreetName equals el1.StreetName
-                          join el2 in query2 on addr.HouseNumber equals el2.HouseNumber
-                          select new
-                          {
-                              addr.AddressId,
-                              el1.StreetName,
-                              el2.HouseNumber
-                          };
+                           join el1 in query1 on addr.StreetName equals el1.StreetName
+                           join el2 in query2 on addr.HouseNumber equals el2.HouseNumber
+                           select new
+                           {
+                               addr.AddressId,
+                               el1.StreetName,
+                               el2.HouseNumber
+                           };
 
             var dblRes = efQuery2.ToArray();
             Console.WriteLine("Double query executed...");
@@ -109,10 +109,14 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
 
                 var queryList = context.FromLocalList(localList, ValuesInjectionMethod.Auto);
 
+                // Executing some query before doing actual one
+                var someAddress = context.Addresses.FirstOrDefault();
+
                 var efQuery = from addr in context.Addresses
-                              join el in queryList on
-                                new { addr.StreetName, addr.HouseNumber } equals
-                                new { el.StreetName, el.HouseNumber }
+                              from el in queryList
+                              where
+                                addr.StreetName == el.StreetName &&
+                                addr.HouseNumber <= el.HouseNumber
                               select new
                               {
                                   addr.AddressId,
@@ -136,7 +140,7 @@ namespace EntityFrameworkCore.MemoryJoin.TestRunner45
             Console.ReadLine();
         }
 
-        
+
 
         static List<Address> GetTestAddressData(int count)
         {
