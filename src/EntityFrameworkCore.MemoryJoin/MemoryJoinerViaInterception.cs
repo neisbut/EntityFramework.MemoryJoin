@@ -75,6 +75,7 @@ namespace EntityFrameworkCore.MemoryJoin
             {
                 QueryTableName = EFHelper.GetTableName(context, queryClass),
                 ColumnNames = mapping.UserProperties.Keys.ToArray(),
+                DefaulValueProperties = mapping.DefaulValueProperties,
                 Data = data
                     .Select(x => mapping.UserProperties.ToDictionary(y => y.Key, y => y.Value(x)))
                     .ToList(),

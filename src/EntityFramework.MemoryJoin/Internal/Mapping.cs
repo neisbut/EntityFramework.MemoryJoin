@@ -8,6 +8,8 @@ namespace EntityFramework.MemoryJoin.Internal
     {
         public Dictionary<string, Func<T, object>> UserProperties { get; internal set; }
 
+        public Dictionary<string, Func<object>> DefaulValueProperties { get; internal set; }
+
         public Expression OutExpression { get; internal set; }
 
         public string KeyColumnName { get; internal set; }

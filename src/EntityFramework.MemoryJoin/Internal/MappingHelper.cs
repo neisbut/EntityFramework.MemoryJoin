@@ -10,6 +10,7 @@ using System.Data.Common;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Threading;
+
 #if EFCore
 using Microsoft.EntityFrameworkCore;
 #else
@@ -74,6 +75,7 @@ namespace EntityFramework.MemoryJoin.Internal
             var outMappingPairs = new List<Tuple<MemberInfo, Expression>>();
 
             var usedProperties = new Dictionary<string, Func<T, object>>();
+            var defValuesProperties = new Dictionary<string, Func<object>>();
             var pkColumnName = EFHelper.GetKeyProperty(context, queryClass);
             if (pkColumnName == null)
                 throw new NotSupportedException($"{queryClass.Name} should have PK set");
@@ -91,7 +93,7 @@ namespace EntityFramework.MemoryJoin.Internal
                 if (!allowedPropertyMapping.TryGetValue(baseType, out var allowedMappedProps))
                     throw new NotSupportedException("Not supported property type");
 
-                var mapProperty = allowedMappedProps.FirstOrDefault(x => allowedProperties.Contains(x));
+                var mapProperty = allowedMappedProps.FirstOrDefault(allowedProperties.Contains);
                 if (mapProperty == null)
                     throw new NotSupportedException($"Too complex object, need more properties of '{memberType.Name}' type in '{queryClass.Name}' class");
 
@@ -120,16 +122,24 @@ namespace EntityFramework.MemoryJoin.Internal
 
                 usedProperties.Add(
                     columnNamesDict[mapProperty],
-                    (Func<T, object>)(Expression.Lambda(
+                    (Func<T, object>)Expression.Lambda(
                         Expression.Convert(inExp, typeof(object)),
                         inParam
-                    ).Compile()));
+                    ).Compile());
+                defValuesProperties.Add(
+                    columnNamesDict[mapProperty],
+                    (Func<object>)Expression.Lambda(
+                        Expression.Convert(
+                            Expression.Default(Nullable.GetUnderlyingType(mapProperty.PropertyType) ?? mapProperty.PropertyType),
+                            typeof(object)
+                        )
+                    ).Compile());
             }
 
-            var inCtor = queryClass.GetConstructor(new Type[] { });
-            var inNew = Expression.New(inCtor);
-            var inBind = Expression.MemberInit(inNew,
-                inMappingPairs.Select(x => Expression.Bind(x.Item1, x.Item2)));
+            //var inCtor = queryClass.GetConstructor(new Type[] { });
+            //var inNew = Expression.New(inCtor);
+            //var inBind = Expression.MemberInit(inNew,
+            //    inMappingPairs.Select(x => Expression.Bind(x.Item1, x.Item2)));
             // var inExpression = Expression.Lambda(inBind, inParam);
 
             var outCtor = typeof(T).GetConstructors(
@@ -157,7 +167,8 @@ namespace EntityFramework.MemoryJoin.Internal
             {
                 UserProperties = usedProperties,
                 OutExpression = outExpression,
-                KeyColumnName = pkColumnName
+                DefaulValueProperties = defValuesProperties,
+                KeyColumnName = pkColumnName,
             };
         }
 
@@ -181,15 +192,15 @@ namespace EntityFramework.MemoryJoin.Internal
                 stringBuilder.Append(" AS ");
             }
 
-            if (options.Data.Any())
+            //if (options.Data.Any())
             {
                 AppendRowsAsValues(stringBuilder, options, command, parameters, providerType);
             }
-            else
-            {
-                // if we have no data, we just generate 1 row consisting of null, because we need one row to define a table
-                AppendNullRow(stringBuilder, options.ColumnNames.Length + 1); // + 1 since primary key column is not included.
-            }
+            //else
+            //{
+            //    // if we have no data, we just generate 1 row consisting of null, because we need one row to define a table
+            //    AppendNullRow(stringBuilder, options, command, parameters);
+            //}
 
             if (providerType == KnownProvider.Sqlite)
             {
@@ -197,7 +208,7 @@ namespace EntityFramework.MemoryJoin.Internal
             }
             else
             {
-                stringBuilder.Append("AS ");
+                stringBuilder.Append(" AS ");
                 AppendColumnAliases(stringBuilder, options);
             }
 
@@ -205,11 +216,11 @@ namespace EntityFramework.MemoryJoin.Internal
             // append a condition which will always be false.
             if (!options.Data.Any())
             {
-                stringBuilder.Append(" WHERE 1=0");
+                stringBuilder.Append(" WHERE 1 = 0");
             }
         }
 
-        private static void AppendRowsAsValues(StringBuilder sb, InterceptionOptions options, DbCommand command, IList parameters, KnownProvider providerType)
+        static string GetParamsPattern()
         {
 #if EFCore
             string paramPattern = EntityFrameworkCore.MemoryJoin.MemoryJoiner.ParametersPrefix;
@@ -221,13 +232,24 @@ namespace EntityFramework.MemoryJoin.Internal
 
             paramPattern = paramPattern + parametersSequence + "_";
 
+            return paramPattern;
+        }
+
+        private static void AppendRowsAsValues(StringBuilder sb, InterceptionOptions options, DbCommand command, IList parameters, KnownProvider providerType)
+        {
+            var paramPattern = GetParamsPattern();
+
             var innerSb = new StringBuilder(20);
             var i = 0;
             var id = 1;
 
             sb.Append("( VALUES ");
 
-            foreach (var el in options.Data)
+            var data = options.Data.Count > 0 ?
+                options.Data :
+                new List<Dictionary<string, object>> { options.DefaulValueProperties.ToDictionary(x => x.Key, x => x.Value()) };
+
+            foreach (var el in data)
             {
                 sb.Append("(");
                 // Let's append Id anyways, as per Issue #1
@@ -265,20 +287,40 @@ namespace EntityFramework.MemoryJoin.Internal
             sb.Append(")");
         }
 
-        private static void AppendNullRow(StringBuilder sb, int numberOfColumns)
-        {
-            sb.Append("(VALUES (");
-            for (var i = 0; i < numberOfColumns; i++)
-            {
-                sb.Append("NULL, ");
-            }
-            sb.Length -= 2;
-            sb.Append("))");
-        }
+        //private static void AppendNullRow(StringBuilder sb, InterceptionOptions options, DbCommand command, IList parameters)
+        //{
+
+
+        //    sb.Append("(VALUES (");
+        //    for (var i = 0; i < numberOfColumns; i++)
+        //    {
+        //        sb.Append("NULL, ");
+        //    }
+        //    sb.Length -= 2;
+        //    sb.Append("))");
+        //}
+
+        //private static void AppendNullRowViaParameters(StringBuilder sb, InterceptionOptions options, DbCommand command, IList parameters)
+        //{
+        //    var paramPattern = GetParamsPattern();
+
+        //    sb.Append("(VALUES (");
+        //    for (var i = 0; i < options.ColumnNames.Length; i++)
+        //    {
+        //        var paramName = $"{paramPattern}{i}";
+        //        var param = command.CreateParameter();
+
+        //        param.ParameterName = paramName;
+        //        param.Value = null;
+        //        parameters.Add(param);
+        //        sb.Append(paramName);
+        //    }
+        //    sb.Length -= 2;
+        //    sb.Append("))");
+        //}
 
         private static void AppendColumnAliases(StringBuilder sb, InterceptionOptions options)
         {
-
             sb.Append(options.DynamicTableName)
                 .Append("(")
                 .Append(options.KeyColumnName)
@@ -371,9 +413,9 @@ namespace EntityFramework.MemoryJoin.Internal
                     switch (provider)
                     {
                         case KnownProvider.PostgreSql:
-                                sb.Append("CAST('")
-                                    .Append(Convert.ToString(value, CultureInfo.InvariantCulture))
-                                    .Append("' AS UUID)");
+                            sb.Append("CAST('")
+                                .Append(Convert.ToString(value, CultureInfo.InvariantCulture))
+                                .Append("' AS UUID)");
                             break;
                         case KnownProvider.Mssql:
                             sb.Append("CONVERT(uniqueidentifier, '")

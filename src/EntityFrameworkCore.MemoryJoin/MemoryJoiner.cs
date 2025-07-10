@@ -87,13 +87,14 @@ namespace EntityFrameworkCore.MemoryJoin
 
             var sb = new StringBuilder(100);
 
-            var propMapping = allowedMappingDict.GetOrAdd(queryClass, (t) => MappingHelper.GetPropertyMappings(t));
+            var propMapping = allowedMappingDict.GetOrAdd(queryClass, MappingHelper.GetPropertyMappings);
             var entityMapping = MappingHelper.GetEntityMapping<T>(context, queryClass, propMapping);
 
             var opts = new InterceptionOptions
             {
                 QueryTableName = EFHelper.GetTableName(context, queryClass),
                 ColumnNames = entityMapping.UserProperties.Keys.ToArray(),
+                DefaulValueProperties = entityMapping.DefaulValueProperties,
                 Data = data
                     .Select(x => entityMapping.UserProperties.ToDictionary(y => y.Key, y => y.Value(x)))
                     .ToList(),

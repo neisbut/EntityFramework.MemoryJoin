@@ -11,6 +11,8 @@ namespace EntityFramework.MemoryJoin.Internal
 
         public List<Dictionary<string, object>> Data { get; set; }
 
+        public Dictionary<string, Func<object>> DefaulValueProperties { get; internal set; }
+
         public string[] ColumnNames { get; set; }
 
         public string KeyColumnName { get; set; }
